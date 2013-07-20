@@ -5,6 +5,11 @@ use warnings;
 use Dancer2::Plugin;
 my $counter = 0;
 
+register set_session => sub {
+    my ($dsl, $key, $value) = @_;
+    $dsl->session($key, $value);
+};
+
 register around_get => sub {
     my $dsl = shift;
     $dsl->get( '/foo/plugin' => sub {
