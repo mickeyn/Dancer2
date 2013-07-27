@@ -138,7 +138,7 @@ sub get_postponed_hooks {
     # if it's an app, send the runner'st postponed_hooks
     # they will either have hooks or be an empty hashref
     ref($self) eq 'Dancer2::Core::App'
-        and return Dancer2->runner->postponed_hooks;
+        and return Dancer2->runner->server->postponed_hooks;
 
     # not an app, but does have postponed_hooks, so send them
     $self->can('postponed_hooks')

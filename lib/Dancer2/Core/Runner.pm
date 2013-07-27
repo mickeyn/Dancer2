@@ -11,8 +11,6 @@ use Dancer2::ModuleLoader;
 use File::Basename;
 use File::Spec;
 
-with 'Dancer2::Core::Role::Config';
-
 # the path to the caller script that is starting the app
 # mandatory, because we use that to determine where the appdir is.
 has caller => (
@@ -40,6 +38,8 @@ has location => (
     lazy    => 1,
     builder => '_build_location',
 );
+
+with 'Dancer2::Core::Role::Config';
 
 # when the runner is created, it has to init the server instance
 # according to the configuration
@@ -87,7 +87,7 @@ sub default_config {
 }
 
 sub _build_location {
-    my $self   = @_;
+    my $self   = shift;
     my $script = $self->caller;
 
     # default to the dir that contains the script...
@@ -157,6 +157,8 @@ sub start {
 
 # Used by 'logger' to get a name from a Runner
 sub name {"runner"}
+
+1;
 
 =head1 DESCRIPTION
 

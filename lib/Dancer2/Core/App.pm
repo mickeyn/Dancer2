@@ -11,10 +11,6 @@ use Dancer2::Core::Types;
 use Dancer2::Core::Route;
 use Dancer2::Core::Hook;
 
-# we have hooks here
-with 'Dancer2::Core::Role::Hookable';
-with 'Dancer2::Core::Role::Config';
-
 has plugins => (
     is      => 'rw',
     isa     => ArrayRef,
@@ -103,6 +99,10 @@ has routes => (
         };
     },
 );
+
+# we have hooks here
+with 'Dancer2::Core::Role::Hookable';
+with 'Dancer2::Core::Role::Config';
 
 sub supported_hooks {
     qw/
@@ -530,6 +530,8 @@ sub routes_regexps_for {
     return [ map { $_->regexp } @{ $self->routes->{$method} } ];
 }
 
+1;
+
 =head1 DESCRIPTION
 
 Everything a package that uses Dancer2 does is encapsulated into a
@@ -593,4 +595,3 @@ Sugar for getting the ordered list of all registered route regexps by method.
 
 Returns an ArrayRef with the results.
 
-1;
