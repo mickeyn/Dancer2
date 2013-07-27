@@ -13,12 +13,6 @@ use File::Spec;
 
 with 'Dancer2::Core::Role::Config';
 
-has postponed_hooks => (
-    is      => 'rw',
-    isa     => HashRef,
-    default => sub { {} },
-);
-
 # the path to the caller script that is starting the app
 # mandatory, because we use that to determine where the appdir is.
 has caller => (
@@ -61,7 +55,6 @@ sub _build_server {
         host      => $self->config->{host},
         port      => $self->config->{port},
         is_daemon => $self->config->{is_daemon},
-        runner    => $self,
     );
 }
 
@@ -184,11 +177,6 @@ The environment string. The options, in this order, are:
 =item * C<development>
 
 =back
-
-=attr postponed_hooks
-
-Postponed hooks will be applied at the end, when the hookable objects are 
-instantiated, not before.
 
 =attr caller
 

@@ -13,6 +13,8 @@ use Dancer2::Core::Response;
 use Dancer2::Core::Request;
 use Dancer2::Core::Context;
 
+requires '_build_name';
+
 has name => (
     is      => 'ro',
     lazy    => 1,
@@ -42,13 +44,6 @@ has apps => (
     default => sub { [] },
 );
 
-has runner => (
-    is       => 'ro',
-    required => 1,
-    isa      => InstanceOf ['Dancer2::Core::Runner'],
-    weak_ref => 1,
-);
-
 has dispatcher => (
     is      => 'rw',
     isa     => InstanceOf ['Dancer2::Core::Dispatcher'],
@@ -56,7 +51,11 @@ has dispatcher => (
     builder => '_build_dispatcher',
 );
 
-requires '_build_name';
+has postponed_hooks => (
+    is      => 'rw',
+    isa     => HashRef,
+    default => sub { {} },
+);
 
 sub _build_dispatcher {
     my ($self) = @_;
@@ -89,14 +88,23 @@ sub register_application {
     my ( $self, $app ) = @_;
     push @{ $self->apps }, $app;
     $app->server($self);
-    $app->server->runner->postponed_hooks(
-        {   %{ $app->server->runner->postponed_hooks },
-            %{ $app->postponed_hooks }
-        }
-    );
+
+    # add postponed hooks to our app-global copy
+    $self->add_postponed_hooks( $app->postponed_hooks );
+}
+
+sub add_postponed_hooks {
+    my $self  = shift;
+    my $hooks = shift;
+
+    $self->postponed_hooks( {
+        %{ $self->postponed_hooks },
+        %{ $hooks },
+    } );
 }
 
 1;
+
 =head1 DESCRIPTION
 
 This role defines what servers need to implement and provide some helpful
@@ -131,6 +139,11 @@ A read/write attribute which holds the L<Dancer2::Core::Dispatcher> object, to
 dispatch an incoming request to the appropriate route.
 
 It has a lazy builder that creates a new dispatcher with the server's apps.
+
+=attr postponed_hooks
+
+Postponed hooks will be applied at the end, when the hookable objects are
+instantiated, not before.
 
 =method psgi_app
 

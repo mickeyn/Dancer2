@@ -130,13 +130,16 @@ sub import {
     my $local_libdir = Dancer2::FileUtils::path( $runner->location, 'lib' );
     Dancer2::ModuleLoader->use_lib($local_libdir) if -d $local_libdir;
 
+    my $server = $runner->server;
+
     # the app object
+    # populating with the server's postponed hooks in advanced
     my $app = Dancer2::Core::App->new(
         name            => $caller,
         environment     => $runner->environment,
         location        => $runner->location,
         runner_config   => $runner->config,
-        postponed_hooks => $runner->postponed_hooks,
+        postponed_hooks => $server->postponed_hooks,
     );
 
     core_debug("binding import method to $caller");
@@ -144,7 +147,7 @@ sub import {
 
     # register the app within the runner instance
     core_debug("binding app to $caller");
-    $runner->server->register_application($app);
+    $server->register_application($app);
 
     core_debug("exporting DSL symbols for $caller");
 
