@@ -1,23 +1,5 @@
 # ABSTRACT: encapsulation of Dancer2 packages
-
 package Dancer2::Core::App;
-
-=head1 DESCRIPTION
-
-Everything a package that uses Dancer2 does is encapsulated into a
-C<Dancer2::Core::App> instance. This class defines all that can be done in such
-objects.
-
-Mainly, it will contain all the route handlers, the configuration settings and
-the hooks that are defined in the calling package.
-
-Note that with Dancer2, everything that is done within a package is scoped to
-that package, thanks to that encapsulation.
-
-=cut
-
-use strict;
-use warnings;
 
 use Moo;
 use File::Spec;
@@ -31,17 +13,7 @@ use Dancer2::Core::Hook;
 
 # we have hooks here
 with 'Dancer2::Core::Role::Hookable';
-
-sub supported_hooks {
-    qw/
-      core.app.before_request
-      core.app.after_request
-      /;
-}
-
-=attr plugins
-
-=cut
+with 'Dancer2::Core::Role::Config';
 
 has plugins => (
     is      => 'rw',
@@ -49,12 +21,95 @@ has plugins => (
     default => sub { [] },
 );
 
-# FIXME not needed anymore, I suppose...
-sub api_version {2}
+has server => (
+    is       => 'rw',
+    isa      => ConsumerOf ['Dancer2::Core::Role::Server'],
+    weak_ref => 1,
+);
 
-=method register_plugin
+has location => (
+    is  => 'ro',
+    isa => sub { -d $_[0] or croak "Not a regular location: $_[0]" },
+    default => sub { File::Spec->rel2abs('.') },
+);
 
-=cut
+has runner_config => (
+    is      => 'ro',
+    isa     => HashRef,
+    default => sub { {} },
+);
+
+has default_config => (
+    is      => 'ro',
+    isa     => HashRef,
+    lazy    => 1,
+    builder => '_build_default_config',
+);
+
+has postponed_hooks => (
+    is      => 'ro',
+    isa     => HashRef,
+    default => sub { {} },
+);
+
+has route_handlers => (
+    is      => 'rw',
+    isa     => HashRef,
+    default => sub { {} },
+);
+
+has name => (
+    is  => 'ro',
+    isa => Str,
+);
+
+# holds a context whenever a request is processed
+has context => (
+    is      => 'rw',
+    isa     => Maybe [ InstanceOf ['Dancer2::Core::Context'] ],
+    trigger => sub {
+        my ( $self, $ctx ) = @_;
+        $self->_init_for_context($ctx),;
+        for my $type (qw/logger serializer session template/) {
+            my $engine = $self->settings->{$type}
+              or next;
+            defined($ctx) ? $engine->context($ctx) : $engine->clear_context;
+        }
+    },
+);
+
+has prefix => (
+    is        => 'rw',
+    isa       => Maybe [Dancer2Prefix],
+    predicate => 1,
+    coerce    => sub {
+        my ($prefix) = @_;
+        return undef if defined($prefix) and $prefix eq "/";
+        return $prefix;
+    },
+);
+
+# routes registry, stored by method:
+has routes => (
+    is      => 'rw',
+    isa     => HashRef,
+    default => sub {
+        {   get     => [],
+            head    => [],
+            post    => [],
+            put     => [],
+            del     => [],
+            options => [],
+        };
+    },
+);
+
+sub supported_hooks {
+    qw/
+      core.app.before_request
+      core.app.after_request
+      /;
+}
 
 sub register_plugin {
     my ( $self, $plugin ) = @_;
@@ -69,50 +124,10 @@ around BUILDARGS => sub {
     return $class->$orig(%args);
 };
 
-=attr server
-
-=cut
-
-has server => (
-    is       => 'rw',
-    isa      => ConsumerOf ['Dancer2::Core::Role::Server'],
-    weak_ref => 1,
-);
-
-=attr location
-
-=cut
-
-has location => (
-    is  => 'ro',
-    isa => sub { -d $_[0] or croak "Not a regular location: $_[0]" },
-    default => sub { File::Spec->rel2abs('.') },
-);
-
-with 'Dancer2::Core::Role::Config';
+# FIXME not needed anymore, I suppose...
+sub api_version {2}
 
 sub _build_environment {'development'}
-
-=attr runner_config
-
-=cut
-
-has runner_config => (
-    is      => 'ro',
-    isa     => HashRef,
-    default => sub { {} },
-);
-
-=attr default_config
-
-=cut
-
-has default_config => (
-    is      => 'ro',
-    isa     => HashRef,
-    lazy    => 1,
-    builder => '_build_default_config',
-);
 
 sub _build_default_config {
     my ($self) = @_;
@@ -215,12 +230,6 @@ sub all_hook_aliases {
 
     return $aliases;
 }
-
-has postponed_hooks => (
-    is      => 'ro',
-    isa     => HashRef,
-    default => sub { {} },
-);
 
 # add_hook will add the hook to the first "hook candidate" it finds that support
 # it. If none, then it will try to add the hook to the current application.
@@ -415,12 +424,6 @@ sub finish {
     $self->compile_hooks;
 }
 
-has route_handlers => (
-    is      => 'rw',
-    isa     => HashRef,
-    default => sub { {} },
-);
-
 sub init_route_handlers {
     my ($self) = @_;
 
@@ -472,26 +475,6 @@ sub compile_hooks {
     }
 }
 
-has name => (
-    is  => 'ro',
-    isa => Str,
-);
-
-# holds a context whenever a request is processed
-has context => (
-    is      => 'rw',
-    isa     => Maybe [ InstanceOf ['Dancer2::Core::Context'] ],
-    trigger => sub {
-        my ( $self, $ctx ) = @_;
-        $self->_init_for_context($ctx),;
-        for my $type (qw/logger serializer session template/) {
-            my $engine = $self->settings->{$type}
-              or next;
-            defined($ctx) ? $engine->context($ctx) : $engine->clear_context;
-        }
-    },
-);
-
 sub _init_for_context {
     my ($self) = @_;
 
@@ -501,30 +484,6 @@ sub _init_for_context {
     $self->context->request->is_behind_proxy(1)
       if $self->setting('behind_proxy');
 }
-
-has prefix => (
-    is        => 'rw',
-    isa       => Maybe [Dancer2Prefix],
-    predicate => 1,
-    coerce    => sub {
-        my ($prefix) = @_;
-        return undef if defined($prefix) and $prefix eq "/";
-        return $prefix;
-    },
-);
-
-=head2 lexical_prefix
-
-Allow for setting a lexical prefix
-
-    $app->lexical_prefix('/blog', sub {
-        ...
-    });
-
-All the route defined within the callback will have a prefix appended to the
-current one.
-
-=cut
 
 sub lexical_prefix {
     my ( $self, $prefix, $cb ) = @_;
@@ -551,34 +510,6 @@ sub lexical_prefix {
       if $e;
 }
 
-# routes registry, stored by method:
-has routes => (
-    is      => 'rw',
-    isa     => HashRef,
-    default => sub {
-        {   get     => [],
-            head    => [],
-            post    => [],
-            put     => [],
-            del     => [],
-            options => [],
-        };
-    },
-);
-
-=head2 add_route
-
-Register a new route handler.
-
-    $app->add_route(
-        method  => 'get',
-        regexp  => '/somewhere',
-        code    => sub { ... },
-        options => $conditions,
-    );
-
-=cut
-
 sub add_route {
     my ( $self, %route_attrs ) = @_;
 
@@ -589,17 +520,6 @@ sub add_route {
 
     push @{ $self->routes->{$method} }, $route;
 }
-
-=head2 route_exists
-
-Check if a route already exists.
-
-    my $route = Dancer2::Core::Route->new(...);
-    if ($app->route_exists($route)) {
-        ...
-    }
-
-=cut
 
 sub route_exists {
     my ( $self, $route ) = @_;
@@ -612,6 +532,66 @@ sub route_exists {
     return 0;
 }
 
+sub routes_regexps_for {
+    my ( $self, $method ) = @_;
+    return [ map { $_->regexp } @{ $self->routes->{$method} } ];
+}
+
+=head1 DESCRIPTION
+
+Everything a package that uses Dancer2 does is encapsulated into a
+C<Dancer2::Core::App> instance. This class defines all that can be done in such
+objects.
+
+Mainly, it will contain all the route handlers, the configuration settings and
+the hooks that are defined in the calling package.
+
+Note that with Dancer2, everything that is done within a package is scoped to
+that package, thanks to that encapsulation.
+
+=attr plugins
+
+=method register_plugin
+
+=attr server
+
+=attr location
+
+=attr runner_config
+
+=attr default_config
+
+=head2 lexical_prefix
+
+Allow for setting a lexical prefix
+
+    $app->lexical_prefix('/blog', sub {
+        ...
+    });
+
+All the route defined within the callback will have a prefix appended to the
+current one.
+
+=head2 add_route
+
+Register a new route handler.
+
+    $app->add_route(
+        method  => 'get',
+        regexp  => '/somewhere',
+        code    => sub { ... },
+        options => $conditions,
+    );
+
+=head2 route_exists
+
+Check if a route already exists.
+
+    my $route = Dancer2::Core::Route->new(...);
+    if ($app->route_exists($route)) {
+        ...
+    }
+
 =head2 routes_regexps_for
 
 Sugar for getting the ordered list of all registered route regexps by method.
@@ -619,12 +599,5 @@ Sugar for getting the ordered list of all registered route regexps by method.
     my $regexps = $app->routes_regexps_for( 'get' );
 
 Returns an ArrayRef with the results.
-
-=cut
-
-sub routes_regexps_for {
-    my ( $self, $method ) = @_;
-    return [ map { $_->regexp } @{ $self->routes->{$method} } ];
-}
 
 1;
