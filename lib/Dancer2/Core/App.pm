@@ -117,13 +117,6 @@ sub register_plugin {
     push @{ $self->plugins }, $plugin;
 }
 
-around BUILDARGS => sub {
-    my $orig = shift;
-    my ( $class, %args ) = @_;
-    $args{postponed_hooks} ||= {};
-    return $class->$orig(%args);
-};
-
 # FIXME not needed anymore, I suppose...
 sub api_version {2}
 
