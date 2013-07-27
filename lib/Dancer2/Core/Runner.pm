@@ -25,10 +25,6 @@ has caller => (
     is       => 'ro',
     isa      => Str,
     required => 1,
-    trigger  => sub {
-        my ( $self, $script ) = @_;
-        $self->_build_location($script);
-    },
 );
 
 has server => (
@@ -45,8 +41,10 @@ has mime_type => (
 );
 
 has location => (
-    is  => 'rw',
-    isa => Str,
+    is      => 'ro',
+    isa     => Str,
+    lazy    => 1,
+    builder => '_build_location',
 
     # make sure the path given is always absolute
     coerce => sub {
@@ -104,7 +102,8 @@ sub default_config {
 }
 
 sub _build_location {
-    my ( $self, $script ) = @_;
+    my $self   = @_;
+    my $script = $self->caller;
 
     # default to the dir that contains the script...
     my $location = Dancer2::FileUtils::dirname($script);
@@ -133,7 +132,16 @@ sub _build_location {
 
     }
 
-    $self->location( $subdir_found ? $subdir : $location );
+    return $subdir_found ? $subdir : $location;
+}
+
+sub BUILD {
+    my $self = shift;
+
+    # this assures any failure in building the location
+    # will be encountered as soon as possible
+    # while making sure that 'caller' is already available
+    $self->location;
 }
 
 sub start {
