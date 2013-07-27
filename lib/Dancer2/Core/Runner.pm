@@ -45,14 +45,6 @@ has location => (
     isa     => Str,
     lazy    => 1,
     builder => '_build_location',
-
-    # make sure the path given is always absolute
-    coerce => sub {
-        my ($value) = @_;
-        return File::Spec->rel2abs($value)
-          if !File::Spec->file_name_is_absolute($value);
-        return $value;
-    },
 );
 
 # when the runner is created, it has to init the server instance
@@ -132,7 +124,14 @@ sub _build_location {
 
     }
 
-    return $subdir_found ? $subdir : $location;
+    my $path = $subdir_found ? $subdir : $location;
+
+    # return if absolute
+    File::Spec->file_name_is_absolute($path)
+        and return $path;
+
+    # convert relative to absolute
+    return File::Spec->rel2abs($path);
 }
 
 sub BUILD {
