@@ -12,9 +12,8 @@ use Test::More;
 }
 
 use Dancer2::Core::Runner;
-my $runner = Dancer2::Core::Runner->new( caller => __FILE__ );
-
-my $f = Foo->new( host => 'localhost', port => 3000, runner => $runner );
+my $f = Foo->new( host => 'localhost', port => 3000 );
+my $runner = Dancer2::Core::Runner->new( caller => __FILE__, server => $f );
 my $app = Dancer2::Core::App->new( name => 'foo' );
 
 $f->register_application($app);

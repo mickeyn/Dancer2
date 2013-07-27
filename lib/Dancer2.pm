@@ -44,7 +44,7 @@ Returns the current runner. It is of type L<Dancer2::Core::Runner>.
 
 =cut
 
-my $runner;
+our $runner;
 
 sub runner {$runner}
 

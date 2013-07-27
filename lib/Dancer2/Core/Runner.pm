@@ -134,6 +134,12 @@ sub BUILD {
     # will be encountered as soon as possible
     # while making sure that 'caller' is already available
     $self->location;
+
+    # set the global runner object if one doesn't exist yet
+    # this can happen if you create one without going through Dancer2
+    # which doesn't trigger the import that creates it
+    defined $Dancer2::runner
+        or $Dancer2::runner = $self;
 }
 
 sub start {
