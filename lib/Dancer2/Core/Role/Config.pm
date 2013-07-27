@@ -134,14 +134,24 @@ sub load_config_file {
 
 sub get_postponed_hooks {
     my ($self) = @_;
-    return ( ref($self) eq 'Dancer2::Core::App' )
-      ? (
-        ( defined $self->server )
-        ? $self->server->runner->postponed_hooks
-        : {}
-      )
-      : $self->can('postponed_hooks') ? $self->postponed_hooks
-      :                                 {};
+
+    # if it's an app with a defined server
+    # send the server's runner's postponed_hooks
+    # if no defined server, just send an empty hashref
+    if ( ref($self) eq 'Dancer2::Core::App' ) {
+        defined $self->server
+            and return $self->server->runner->postponed_hooks;
+
+        return {};
+    }
+
+    # not an app, but does have postponed_hooks
+    # send them
+    $self->can('postponed_hooks')
+        and return $self->postponed_hooks;
+
+    # default, send empty hashref
+    return {};
 }
 
 # private
