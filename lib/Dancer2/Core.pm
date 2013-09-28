@@ -12,13 +12,7 @@ Camelize a underscore-separated-string.
 =cut
 
 sub camelize {
-    my ($value) = @_;
-
-    my $camelized = '';
-    for my $word ( split /_/, $value ) {
-        $camelized .= ucfirst($word);
-    }
-    return $camelized;
+    join '' => map { ucfirst } split /_/ => shift;
 }
 
 
