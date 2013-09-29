@@ -118,9 +118,7 @@ against the path) or undef if not.
 sub match {
     my ( $self, $request ) = @_;
 
-    if ( $self->has_options ) {
-        return unless $self->validate_options($request);
-    }
+    return if $self->has_options and !$self->validate_options($request);
 
     my %params;
     my @values = $request->dispatch_path =~ $self->regexp;
