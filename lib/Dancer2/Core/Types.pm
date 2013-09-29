@@ -4,7 +4,7 @@ package Dancer2::Core::Types;
 
 use strict;
 use warnings;
-use Scalar::Util 'blessed', 'looks_like_number';
+use Scalar::Util 'blessed';
 use MooX::Types::MooseLike 0.16 'exception_message';
 use MooX::Types::MooseLike::Base qw/:all/;
 
