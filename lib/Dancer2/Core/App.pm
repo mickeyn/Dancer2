@@ -6,7 +6,7 @@ use File::Spec;
 use Scalar::Util 'blessed';
 use Carp 'croak';
 
-use Dancer2::FileUtils 'path', 'read_file_content';
+use Dancer2::FileUtils 'path';
 use Dancer2::Core;
 use Dancer2::Core::Types;
 use Dancer2::Core::Route;
