@@ -4,7 +4,7 @@ package Dancer2::Core::Types;
 
 use strict;
 use warnings;
-use Scalar::Util 'blessed';
+
 use MooX::Types::MooseLike 0.16 'exception_message';
 use MooX::Types::MooseLike::Base qw/:all/;
 
@@ -161,7 +161,7 @@ for my $type (
         test => sub {
             return
                  $_[0]
-              && blessed( $_[0] )
+              && ref( $_[0] )
               && ref( $_[0] ) eq 'Dancer2::Core::' . $type;
         },
         message =>
