@@ -62,6 +62,24 @@ has config_files => (
     builder => '_build_config_files',
 );
 
+has local_triggers => (
+    is      => 'ro',
+    isa     => HashRef,
+    default => sub { {} },
+);
+
+has global_triggers => (
+    is      => 'ro',
+    isa     => HashRef,
+    default => sub { +{
+        traces => sub {
+            my ( $self, $traces ) = @_;
+            require Carp;
+            $Carp::Verbose = $traces ? 1 : 0;
+        },
+    } },
+);
+
 sub _build_location { File::Spec->rel2abs('.') }
 
 sub _build_environment {
@@ -220,13 +238,14 @@ sub _compile_config_entry {
 
     my $trigger;
 
-    if (grep {$name eq $_} @{$self->supported_engines}) {
-        $trigger = $self->_engines_triggers->{$name};
-    }else{
-        $trigger = $self->_config_triggers->{$name};
+    # seek this in the global triggers
+    if ( exists $self->global_triggers->{$name} ) {
+        $trigger = $self->global_triggers->{$name};
+    } elsif ( exists $self->local_triggers->{$name} ) {
+        $trigger = $self->local_trigger->{$name};
     }
 
-    return $value unless defined $trigger;
+    defined $trigger or return $value;
 
     return $trigger->( $self, $value, $config );
 }
