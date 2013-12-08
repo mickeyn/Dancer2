@@ -20,7 +20,7 @@ sub supported_engines { [ qw<logger serializer session template> ] }
 
 has logger_engine => (
     is      => 'ro',
-    isa     => ConsumerOf['Dancer2::Core::Role::Logger'],
+    isa     => Maybe[ConsumerOf['Dancer2::Core::Role::Logger']],
     lazy    => 1,
     builder => '_build_logger_engine',
     writer  => 'set_logger_engine',
@@ -28,7 +28,7 @@ has logger_engine => (
 
 has session_engine => (
     is      => 'ro',
-    isa     => ConsumerOf['Dancer2::Core::Role::Session'],
+    isa     => Maybe[ConsumerOf['Dancer2::Core::Role::SessionFactory']],
     lazy    => 1,
     builder => '_build_session_engine',
     writer  => 'set_session_engine',
@@ -36,7 +36,7 @@ has session_engine => (
 
 has template_engine => (
     is      => 'ro',
-    isa     => ConsumerOf['Dancer2::Core::Role::Template'],
+    isa     => Maybe[ConsumerOf['Dancer2::Core::Role::Template']],
     lazy    => 1,
     builder => '_build_template_engine',
     writer  => 'set_template_engine',
@@ -44,7 +44,7 @@ has template_engine => (
 
 has serializer_engine => (
     is      => 'ro',
-    isa     => ConsumerOf['Dancer2::Core::Role::Serializer'],
+    isa     => Maybe[ConsumerOf['Dancer2::Core::Role::Serializer']],
     lazy    => 1,
     builder => '_build_serializer_engine',
     writer  => 'set_serializer_engine',

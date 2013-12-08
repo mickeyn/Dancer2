@@ -65,7 +65,7 @@ has config_files => (
 has local_triggers => (
     is      => 'ro',
     isa     => HashRef,
-    default => sub { {} },
+    default => sub { +{} },
 );
 
 has global_triggers => (
@@ -242,7 +242,7 @@ sub _compile_config_entry {
     if ( exists $self->global_triggers->{$name} ) {
         $trigger = $self->global_triggers->{$name};
     } elsif ( exists $self->local_triggers->{$name} ) {
-        $trigger = $self->local_trigger->{$name};
+        $trigger = $self->local_triggers->{$name};
     }
 
     defined $trigger or return $value;
